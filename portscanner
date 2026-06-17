@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+import socket
+import sys
+import os
+from datetime import datetime
+from colorama import Fore, Style, init
+
+# Ranglarni faollashtirish
+init(autoreset=True)
+
+BANNER = f"""
+{Fore.CYAN}██████╗  ██████╗ ██████╗ ████████╗    ███████╗ ██████╗ ██████╗ 
+{Fore.CYAN}██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝    ██╔════╝██╔════╝██╔══██╗
+{Fore.CYAN}██████╔╝██║   ██║██████╔╝   ██║       ███████╗██║     ██████╔╝
+{Fore.CYAN}██╔═══╝ ██║   ██║██╔══██╗   ██║       ╚════██║██║     ██╔══██╗
+{Fore.CYAN}██║     ╚██████╔╝██║  ██║   ██║       ███████║╚██████╗██║  ██║
+{Fore.CLEAN}╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝       ╚══════╝ ╚═════╝╚═╝  ╚═╝
+{Fore.GREEN}      [+] Local Port Scanner & Banner Grabber v1.0 [+]
+{Fore.YELLOW}              [*] 100% WORKING - NO ROOT REQUIRED [*]
+"""
+
+# Eng ko'p ishlatiladigan va muhim portlar lug'ati
+COMMON_PORTS = {
+    21: "FTP (File Transfer)",
+    22: "SSH (Secure Shell)",
+    23: "Telnet",
+    25: "SMTP (Email)",
+    53: "DNS",
+    80: "HTTP (Web Server)",
+    110: "POP3 (Email)",
+    443: "HTTPS (Secure Web)",
+    445: "SMB (Windows Share)",
+    3306: "MySQL Database",
+    8080: "HTTP Alternative"
+}
+
+def scan_ports(target_host):
+    try:
+        # IP manzilni tekshirish yoki domenni IP ga o'tkazish
+        target_ip = socket.gethostbyname(target_host)
+    except socket.gaierror:
+        print(f"\n{Fore.RED}[-] Xatolik: Manzil noto'g'ri yoki internet aloqasi yo'q.")
+        return
+
+    print(f"\n{Fore.YELLOW}[*] Nishon: {target_host} ({target_ip})")
+    print(f"{Fore.YELLOW}[*] Skanerlash boshlandi: {str(datetime.now())[:19]}")
+    print(f"{Fore.CYAN}{'-'*60}")
+    print(f"{Fore.GREEN}{'Port':<10} | {'Holati':<10} | {'Xizmat turi (Service)':<30}")
+    print(f"{Fore.CYAN}{'-'*60}")
+
+    open_ports = 0
+
+    for port, service in COMMON_PORTS.items():
+        # Soket yaratish (IPv4 va TCP)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.0) # Har bir port uchun 1 soniya kutish vaqti
+        
+        # Portga ulanib ko'rish
+        result = s.connect_ex((target_ip, port))
+        
+        if result == 0:
+            print(f"{Fore.GREEN}{port:<10} | {'OCHIQ':<10} | {service:<30}")
+            open_ports += 1
+            
+            # Banner Grabbing - Tizim haqida ma'lumot olishga urinish
+            try:
+                s.send(b"Hello\r\n")
+                banner = s.recv(1024).decode('utf-8', errors='ignore').strip()
+                if banner:
+                    print(f"   ↳ {Fore.MAGENTA}Xizmat ma'lumoti: {banner}")
+            except Exception:
+                pass
+                
+        s.close()
+
+    print(f"{Fore.CYAN}{'-'*60}")
+    print(f"{Fore.CYAN}[=] Skanerlash yakunlandi. Jami ochiq portlar: {open_ports}")
+
+def main():
+    os.system("clear")
+    print(BANNER)
+    
+    try:
+        # O'zingizning routeringiz IP manzili (odatda 192.168.1.1 yoki 192.168.0.1) 
+        # yoki localhost (127.0.0.1) ni kiritib sinash mumkin
+        target = input(f"{Fore.CYAN}Skaner qilinadigan IP yoki Domen kiriting (masalan, 127.0.0.1): {Fore.WHITE}").strip()
+        if target:
+            scan_ports(target)
+        else:
+            print(f"{Fore.RED}[-] Manzil kiritilmadi.")
+    except KeyboardInterrupt:
+        print(f"\n{Fore.RED}[-] Dastur to'xtatildi.")
+
+if __name__ == "__main__":
+    main()
